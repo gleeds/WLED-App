@@ -40,9 +40,48 @@ namespace WLED
             topMenuBar.SetButtonIcon(ButtonLocation.Right, ButtonIcon.Add);
             topMenuBar.LeftButtonTapped += OnDeletionModeButtonTapped;
             topMenuBar.RightButtonTapped += OnAddButtonTapped;
+
+            var discovery = DeviceDiscovery.GetInstance();
+            discovery.ValidDeviceFound += Discovery_ValidDeviceFound;
+            if (!discovery.IsDiscovering)
+            {
+                discovery.StartDiscovery();
+            }
         }
 
+        private void Discovery_ValidDeviceFound(object sender, DeviceCreatedEventArgs e)
+        {
+            if (!deviceList.Contains(e.CreatedDevice))
+            {
+                //New Device Found, add automatically
+                OnDeviceCreated(this, e);
+                //deviceList.Add(e.CreatedDevice);
+                //RefreshAll();
+                //UpdateElementsVisibility();
+            }
+            else
+            {
+                var matchedDevice = deviceList.First(d => d.Name == e.CreatedDevice.Name);
+                if (matchedDevice != null && matchedDevice.IsEnabled == false && matchedDevice.NetworkAddress != e.CreatedDevice.NetworkAddress)
+                {
+                    //Device with same name found as offline device with diffrent IP, update IP and try again
+                    deviceList.First(d => d.Name == e.CreatedDevice.Name).NetworkAddress = e.CreatedDevice.NetworkAddress;
+                    RefreshAll();
+                    UpdateElementsVisibility();
+                }
+            }
+        }
 
+        protected override void OnDisappearing()
+        {
+            base.OnDisappearing();
+            var discover = DeviceDiscovery.GetInstance();
+            if (discover.IsDiscovering)
+            {
+                discover.StopDiscovery();
+                discover.ValidDeviceFound -= Discovery_ValidDeviceFound;
+            }
+        }
 
         private void OnRefresh(object sender, EventArgs e)
         {

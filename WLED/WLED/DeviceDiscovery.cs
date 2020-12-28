@@ -11,20 +11,25 @@ namespace WLED
         private ServiceBrowser serviceBrowser;
         public event EventHandler<DeviceCreatedEventArgs> ValidDeviceFound;
 
+        public bool IsDiscovering { get; set; }
+
         private DeviceDiscovery()
         {
             serviceBrowser = new ServiceBrowser();
             serviceBrowser.ServiceAdded += OnServiceAdded;
+            IsDiscovering = false;
         }
 
         public void StartDiscovery()
         {
+            IsDiscovering = true;
             serviceBrowser.StartBrowse("_http._tcp");
         }
 
         public void StopDiscovery()
         {
             serviceBrowser.StopBrowse();
+            IsDiscovering = false;
         }
 
         private async void OnServiceAdded(object sender, ServiceAnnouncementEventArgs e)
